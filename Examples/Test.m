@@ -1,4 +1,3 @@
-
 clc;clear
 
 %% 参数设置
@@ -10,7 +9,8 @@ Z=120*pi;  % wave impedance
 Volume=1;
 %an=(Volume/(pi*4/3)).^(1/3);
 TL=2;   % Topological charge   ***
-
+epsilon=1;
+mu=1;
 %% number and position of source points
 N=12;   %  *** number of point sources
 
@@ -22,11 +22,11 @@ theta=linspace(0,2*pi-2*pi/(N),N);
 %% sampling the observation area xoy plane
 %  z direction slices
 delta=0.4;       % step ***
-size=30;         % xoy range ***
+grid_size=30;         % xoy range ***
 
 % xoy plane
-xo=-size:delta:size-delta;
-yo=-size:delta:size-delta;
+xo=-grid_size:delta:grid_size-delta;
+yo=-grid_size:delta:grid_size-delta;
 zo=1;  % observation z  ***
 
 % size
@@ -120,7 +120,39 @@ Etot=G*J;
 Ex=Etot([1:N_p],1);
 Ey=Etot([N_p+1:2*N_p],1);
 Ez=Etot([2*N_p+1:3*N_p],1);
+Hx=zeros(size(Ex));
+Hy=zeros(size(Ex));
+Hz=zeros(size(Ex));
+%% OAM计算
+oam = calculateOrbitAngularMomentum(Ex, Ey, Ez, xo, yo, delta);
 
-SAM=calculateSpinAngularMomentum(w0,epsilon,u,Ex,Ey,Ez);
+figure(2);
+pcolor(xo,yo,real(oam));
+shading interp;
+colorbar;
+axis equal
+axis([- grid_size grid_size-delta -grid_size grid_size-delta])
+title('Re(L_z^f)')
+%% SAM计算
+sam=calculateSpinAngularMomentum(w0,mu,epsilon,Ex,Ey,Ez);
+Sz=squeeze(sam(:,3));
+Sz=reshape(Sz,Nx,Nx);
 
-imagesc(SAM(:,:,3));%得到的是二维平面的数据，此处展示Sz的结果
+figure(3)
+imagesc(xo,yo,Sz);%得到的是二维平面的数据，此处展示Sz的结果
+axis equal;
+axis([- grid_size grid_size-delta -grid_size grid_size-delta])
+colorbar;
+title('SAM');
+
+%% 场能量计算
+fieldEnergy=GetFieldEnergy(mu,Ex,Ey,Ez,Hx,Hy,Hz);
+fieldEnergy=reshape(fieldEnergy,Nx,Nx);
+
+figure(4)
+imagesc(xo,yo,fieldEnergy);
+axis equal;
+axis([- grid_size grid_size-delta -grid_size grid_size-delta])
+colorbar;
+title('场能量分布')
+
